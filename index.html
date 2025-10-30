@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>信用卡费率计算器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        :root {
+            --safe-area-inset-top: env(safe-area-inset-top);
+            --safe-area-inset-bottom: env(safe-area-inset-bottom);
+            --safe-area-inset-left: env(safe-area-inset-left);
+            --safe-area-inset-right: env(safe-area-inset-right);
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            color: #333;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+        
+        .app-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+        }
+        
+        .container {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 0;
+            box-shadow: none;
+            width: 100%;
+            height: 100%;
+            padding: 20px 15px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 为有刘海的手机适配 */
+        @supports(padding: max(0px)) {
+            .container {
+                padding-left: max(15px, env(safe-area-inset-left));
+                padding-right: max(15px, env(safe-area-inset-right));
+                padding-top: max(20px, env(safe-area-inset-top));
+                padding-bottom: max(20px, env(safe-area-inset-bottom));
+            }
+        }
+        
+        .container::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #4a6cf7, #2a5298);
+            z-index: 1000;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2a5298;
+            margin-bottom: 25px;
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding-top: 5px;
+        }
+        
+        h1 i {
+            color: #4a6cf7;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2a5298;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        
+        .input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        input {
+            width: 100%;
+            padding: 16px 16px 16px 45px;
+            border: 2px solid #e1e8ff;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background-color: #f8faff;
+            height: 54px;
+        }
+        
+        input:focus {
+            border-color: #4a6cf7;
+            outline: none;
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            color: #4a6cf7;
+            font-size: 18px;
+            z-index: 2;
+        }
+        
+        .calculate-btn {
+            background: linear-gradient(135deg, #4a6cf7 0%, #2a5298 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px 0 20px 0;
+            box-shadow: 0 5px 15px rgba(74, 108, 247, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            height: 54px;
+            flex-shrink: 0;
+        }
+        
+        .calculate-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .result {
+            background: linear-gradient(135deg, #f8faff 0%, #e1e8ff 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 10px 0;
+            border: 1px solid #e1e8ff;
+            flex-shrink: 0;
+        }
+        
+        .result-title {
+            color: #2a5298;
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+            border: 1px solid rgba(225, 232, 255, 0.5);
+        }
+        
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .result-label {
+            color: #4a6cf7;
+            font-weight: 600;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .result-label i {
+            width: 24px;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        .result-value {
+            font-weight: 700;
+            color: #2a5298;
+            font-size: 16px;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+            letter-spacing: 0.5px;
+            transition: all 0.3s;
+            padding: 5px 10px;
+            border-radius: 6px;
+        }
+        
+        /* 费率过高时的红色高亮闪烁样式 */
+        .rate-high {
+            color: #e53e3e !important;
+            background-color: rgba(229, 62, 62, 0.15) !important;
+            border: 1px solid rgba(229, 62, 62, 0.3) !important;
+            animation: blink-highlight 1s infinite !important;
+            font-weight: 800;
+            box-shadow: 0 0 10px rgba(229, 62, 62, 0.4);
+        }
+        
+        @keyframes blink-highlight {
+            0% { 
+                opacity: 1;
+                background-color: rgba(229, 62, 62, 0.15);
+                box-shadow: 0 0 10px rgba(229, 62, 62, 0.4);
+            }
+            50% { 
+                opacity: 0.8;
+                background-color: rgba(229, 62, 62, 0.3);
+                box-shadow: 0 0 15px rgba(229, 62, 62, 0.6);
+            }
+            100% { 
+                opacity: 1;
+                background-color: rgba(229, 62, 62, 0.15);
+                box-shadow: 0 0 10px rgba(229, 62, 62, 0.4);
+            }
+        }
+        
+        .warning {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: #fff5f5;
+            border: 2px solid #fed7d7;
+            text-align: center;
+            display: none;
+            animation: fadeIn 0.5s ease;
+            flex-shrink: 0;
+        }
+        
+        .warning-text {
+            color: #e53e3e;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .rate-display {
+            font-weight: 700;
+            color: #e53e3e;
+            font-size: 16px;
+            margin: 5px 0;
+        }
+        
+        .blink {
+            animation: blink 1.2s infinite;
+        }
+        
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .contact {
+            color: #4a6cf7;
+            font-weight: 600;
+            background-color: white;
+            padding: 3px 8px;
+            border-radius: 6px;
+            display: inline-block;
+            font-size: 14px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: auto;
+            padding-top: 20px;
+            color: #7a8cc0;
+            font-size: 12px;
+            line-height: 1.4;
+            flex-shrink: 0;
+        }
+        
+        /* 移动端优化 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px 12px;
+            }
+            
+            h1 {
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+            
+            input {
+                padding: 14px 14px 14px 45px;
+                height: 52px;
+                font-size: 16px;
+            }
+            
+            .calculate-btn {
+                padding: 15px;
+                height: 52px;
+                font-size: 16px;
+            }
+            
+            .result {
+                padding: 15px;
+            }
+            
+            .result-item {
+                padding: 10px 12px;
+            }
+        }
+        
+        /* 小屏幕手机优化 */
+        @media (max-height: 700px) {
+            .container {
+                padding: 12px 10px;
+            }
+            
+            h1 {
+                font-size: 18px;
+                margin-bottom: 15px;
+            }
+            
+            .input-group {
+                margin-bottom: 15px;
+            }
+            
+            .calculate-btn {
+                margin: 8px 0 15px 0;
+            }
+            
+            .result {
+                margin: 8px 0;
+                padding: 15px;
+            }
+            
+            .result-item {
+                margin-bottom: 12px;
+                padding: 10px 12px;
+            }
+        }
+        
+        /* 横屏模式优化 */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .app-container {
+                flex-direction: row;
+            }
+            
+            .container {
+                overflow-y: auto;
+            }
+            
+            .input-section {
+                flex: 1;
+                margin-right: 15px;
+            }
+            
+            .result-section {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="container">
+            <h1><i class="fas fa-credit-card"></i> 信用卡费率计算器</h1>
+            
+            <div class="input-group">
+                <label for="amount"><i class="fas fa-money-bill-wave"></i> 刷卡金额 (元)</label>
+                <div class="input-container">
+                    <i class="fas fa-dollar-sign input-icon"></i>
+                    <input type="number" id="amount" placeholder="请输入刷卡金额">
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="received"><i class="fas fa-wallet"></i> 到账金额 (元)</label>
+                <div class="input-container">
+                    <i class="fas fa-hand-holding-usd input-icon"></i>
+                    <input type="number" id="received" placeholder="请输入实际到账金额">
+                </div>
+            </div>
+            
+            <button class="calculate-btn" id="calculateBtn">
+                <i class="fas fa-calculator"></i> 计算费率
+            </button>
+            
+            <div class="result">
+                <div class="result-title">
+                    <i class="fas fa-chart-line"></i> 计算结果
+                </div>
+                <div class="result-item">
+                    <span class="result-label">
+                        <i class="fas fa-receipt"></i> 手续费
+                    </span>
+                    <span class="result-value" id="fee">0.00 元</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">
+                        <i class="fas fa-percentage"></i> 费率
+                    </span>
+                    <span class="result-value" id="rate">0.00%</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">
+                        <i class="fas fa-chart-bar"></i> 年化单利
+                    </span>
+                    <span class="result-value" id="annual">0.00%</span>
+                </div>
+            </div>
+            
+            <div class="warning" id="warning">
+                <div class="warning-text blink" id="warningText">
+                    <i class="fas fa-exclamation-triangle"></i> 你的机器费率为 <span id="ratePerTenThousand">0</span>
+                </div>
+                <div class="warning-text">高于万60，可联系QQ <span class="contact">382645330</span> 更换为标准费率官品机器</div>
+            </div>
+            
+            <div class="footer">
+                注意：计算结果仅供参考，实际费用以银行规定为准
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 防止手机缩放
+            document.addEventListener('touchstart', function(event) {
+                if (event.touches.length > 1) {
+                    event.preventDefault();
+                }
+            });
+            
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', function(event) {
+                const now = (new Date()).getTime();
+                if (now - lastTouchEnd <= 300) {
+                    event.preventDefault();
+                }
+                lastTouchEnd = now;
+            }, false);
+            
+            const amountInput = document.getElementById('amount');
+            const receivedInput = document.getElementById('received');
+            const calculateBtn = document.getElementById('calculateBtn');
+            const feeElement = document.getElementById('fee');
+            const rateElement = document.getElementById('rate');
+            const annualElement = document.getElementById('annual');
+            const warningElement = document.getElementById('warning');
+            const warningTextElement = document.getElementById('warningText');
+            const ratePerTenThousandElement = document.getElementById('ratePerTenThousand');
+            
+            function calculate() {
+                const amount = parseFloat(amountInput.value) || 0;
+                const received = parseFloat(receivedInput.value) || 0;
+                
+                if (amount <= 0 || received <= 0) {
+                    feeElement.textContent = '0.00 元';
+                    rateElement.textContent = '0.00%';
+                    annualElement.textContent = '0.00%';
+                    warningElement.style.display = 'none';
+                    rateElement.classList.remove('rate-high');
+                    return;
+                }
+                
+                // 计算手续费
+                const fee = amount - received;
+                feeElement.textContent = fee.toFixed(2) + ' 元';
+                
+                // 计算费率
+                const rate = fee / amount;
+                const ratePercent = rate * 100;
+                rateElement.textContent = ratePercent.toFixed(4) + '%';
+                
+                // 计算年化单利 (假设30天免息期)
+                const days = 30;
+                const annualRate = (fee / received) * (365 / days) * 100;
+                annualElement.textContent = annualRate.toFixed(2) + '%';
+                
+                // 计算万分费率
+                const ratePerTenThousand = Math.round(rate * 10000);
+                ratePerTenThousandElement.textContent = `万${ratePerTenThousand}`;
+                
+                // 检查费率是否高于0.006 (6/1000)
+                if (rate > 0.006) {
+                    // 费率显示为红色高亮并闪烁
+                    rateElement.classList.add('rate-high');
+                    // 显示警告信息
+                    warningElement.style.display = 'block';
+                    warningTextElement.classList.add('blink');
+                } else {
+                    // 恢复正常显示
+                    rateElement.classList.remove('rate-high');
+                    warningElement.style.display = 'none';
+                    warningTextElement.classList.remove('blink');
+                }
+            }
+            
+            // 为输入框添加实时计算
+            amountInput.addEventListener('input', calculate);
+            receivedInput.addEventListener('input', calculate);
+            
+            // 为按钮添加点击计算
+            calculateBtn.addEventListener('click', calculate);
+            
+            // 初始计算
+            calculate();
+            
+            // 调整视口高度以适应移动端浏览器
+            function adjustViewport() {
+                const appHeight = () => {
+                    const doc = document.documentElement;
+                    doc.style.setProperty('--app-height', `${window.innerHeight}px`);
+                };
+                window.addEventListener('resize', appHeight);
+                window.addEventListener('orientationchange', appHeight);
+                appHeight();
+            }
+            
+            adjustViewport();
+        });
+    </script>
+</body>
+</html>
